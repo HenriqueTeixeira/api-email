@@ -1,5 +1,8 @@
 package com.hlrconsult.apiemail.controllers;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.validation.Valid;
 
 import org.springframework.beans.BeanUtils;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hlrconsult.apiemail.dtos.EmailDTO;
+import com.hlrconsult.apiemail.enums.StatusEmailEnum;
 import com.hlrconsult.apiemail.models.EmailModel;
 import com.hlrconsult.apiemail.services.EmailService;
 
@@ -39,5 +43,21 @@ public class EmailController {
 		BeanUtils.copyProperties(emailDTO, email);
 		emailService.sendEmailWithAttachment(email);
 		return new ResponseEntity<>(email, HttpStatus.CREATED);
+	}
+
+	@PostMapping("/enviar-agendamento-email-lote")
+	public ResponseEntity<List<EmailModel>> sendingEmailByScheduler(@RequestBody @Valid List<EmailDTO> emailListDTO) {
+		log.info("Recebendo e-mails para envio em lote.");
+
+		List<EmailModel> emailList = new ArrayList<>();
+
+		emailListDTO.stream().forEach(emailDTO -> {
+			EmailModel email = new EmailModel();
+			BeanUtils.copyProperties(emailDTO, email);
+			email.setStatusEmail(StatusEmailEnum.PENDING);
+			emailList.add(email);
+		});
+		emailService.saveEmailByScheduler(emailList);
+		return new ResponseEntity<>(emailList, HttpStatus.CREATED);
 	}
 }

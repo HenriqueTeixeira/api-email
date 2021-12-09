@@ -3,6 +3,7 @@ package com.hlrconsult.apiemail.services;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.mail.internet.MimeMessage;
@@ -70,12 +71,13 @@ public class EmailService {
 					MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
 
 			// Here the attachment is added
-			messageHelper.addAttachment("arquivo_exemplo_anexo.xml", new ClassPathResource("arquivo_exemplo_anexo.xml"));
+			messageHelper.addAttachment("arquivo_exemplo_anexo.xml",
+					new ClassPathResource("arquivo_exemplo_anexo.xml"));
 
 			Map<String, Object> model = new HashMap<>();
-			//model.put("caption", email.getOwnerRef());
+			// model.put("caption", email.getOwnerRef());
 			model.put("text", email.getText());
-			
+
 			Template t = config.getTemplate("email-template.ftl");
 			String html = FreeMarkerTemplateUtils.processTemplateIntoString(t, model);
 
@@ -94,5 +96,18 @@ public class EmailService {
 			log.info("Envio do e-mail salvo.");
 			return emailRepository.save(email);
 		}
+	}
+
+	public List<EmailModel> saveEmailByScheduler(List<EmailModel> emailList) {
+		//TODO - Aplicação de validações
+		log.info("Salvando e-mails para envio por scheduler.");
+		return emailRepository.saveAll(emailList);
+	}
+
+	public void sendEmailByScheduler() {
+		List<EmailModel> emailList = emailRepository.findByStatusEmail();
+		emailList.stream().forEach(item -> item.setStatusEmail(StatusEmailEnum.PROCESSING));
+		emailRepository.saveAll(emailList);
+		emailList.stream().forEach(this::sendEmail);
 	}
 }
